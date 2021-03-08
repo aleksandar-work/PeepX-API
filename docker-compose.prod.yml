@@ -1,0 +1,94 @@
+version: '3.2'
+services:
+    traefik:
+        image: traefik:latest
+        container_name: traefik_peepx
+        networks:
+            - web
+        ports:
+            - '80:80'
+            - '443:443'
+            - '8080:8080'
+        command:
+            - '--docker'
+            - '--docker.domain=docker.localhost'
+            - '--docker.watch'
+            - '--logLevel=DEBUG'
+        volumes:
+            - /var/run/docker.sock:/var/run/docker.sock
+            - ./traefik/traefik.dev.toml:/traefik.toml
+            - ./traefik/acme.json:/etc/traefik/acme.json
+        depends_on:
+            - mongo
+            - api
+            - frontend
+            - nginx_redirect
+        environment:
+            - DO_AUTH_TOKEN=7bb9792f503cc7e58485e7026bde721e466b1817c8be61ed59f76af486249e49
+    mongo:
+        container_name: mongo
+        image: mongo:latest
+        volumes:
+            - ./data:/data/db
+        ports:
+            - '27017:27017'
+        networks:
+            - web
+    api:
+        build:
+            dockerfile: Dockerfile.dev
+            context: ./src
+        image: peepx_backend    
+        volumes:
+            - ./src:/home/app/src
+        environment:
+            - DB_REMOTE=${DB_REMOTE}
+            - DB_URI=${DB_URI}
+            - TEST_DB_URI=${TEST_DB_URI}
+            - JWT_SECRET=${JWT_SECRET}
+            - JWT_ISSUER=${JWT_ISSUER}
+            - DEFAULT_OAUTH_PASSWORD=${DEFAULT_OAUTH_PASSWORD}
+            - CLOUDINARY_CLOUD_NAME=${CLOUDINARY_CLOUD_NAME}
+            - CLOUDINARY_API_KEY=${CLOUDINARY_API_KEY}
+            - CLOUDINARY_API_SECRET=${CLOUDINARY_API_SECRET}
+            - CLOUDINARY_URL=${CLOUDINARY_URL}
+        depends_on:
+            - mongo
+        labels:
+            - "traefik.enable=true"
+            - "traefik.docker.network=web"
+            - "traefik.backend=peepx_api"
+            - "traefik.port=80"
+            - "traefik.frontend.rule=Host:api.peepx.app"
+            - "traefik.frontend.passHostHeader=true"
+        networks:
+            - web
+    frontend:
+        image: nginx:alpine
+        volumes:
+            - ./public_html/:/usr/share/nginx/html
+        labels:
+            - "traefik.enable=true"
+            - "traefik.docker.network=web"
+            - "traefik.backend=peepx_frontend"
+            - "traefik.port=80"
+            - "traefik.frontend.rule=Host:www.peepx.app"
+        networks:
+            - web
+    nginx_redirect:
+        image: schmunk42/nginx-redirect
+        labels:
+            - "traefik.docker.network=web"
+            - "traefik.backend=nginx"
+            - "traefik.enable=true"
+            - "traefik.port=80"
+            - "traefik.frontend.rule=Host:peepx.app"
+        environment:
+            - SERVER_REDIRECT=www.peepx.app
+            - SERVER_REDIRECT_SCHEME=https
+        networks:
+            - web
+networks:
+    web:
+volumes:
+    data: {}

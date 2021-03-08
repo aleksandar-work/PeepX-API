@@ -1,0 +1,10 @@
+FROM node:alpine
+WORKDIR "/home/app"
+COPY ./package*.json ./
+RUN apk add --update \
+    g++ gcc make python \
+    && npm install --global node-gyp
+RUN yarn
+COPY . .
+EXPOSE 9000
+CMD ["yarn", "start"]

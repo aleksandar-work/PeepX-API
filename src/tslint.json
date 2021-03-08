@@ -1,0 +1,24 @@
+{
+    "extends": [
+        "tslint:latest",
+        "tslint-config-airbnb",
+        "tslint-config-prettier"
+    ],
+    "linterOptions": {
+        "exclude": ["config/**/*.js", "node_modules/**/*.ts", "data/**/*.json"]
+    },
+    "rules": {
+        "interface-name": [true, "never-prefix"],
+        "member-access": false,
+        "no-console": false,
+        "ordered-imports": false,
+        "object-literal-sort-keys": false,
+        "no-submodule-imports": false,
+        "no-implicit-dependencies": false,
+        "no-string-literal": false
+    },
+    "env": {
+        "node": true,
+        "mocha": true
+    }
+}
